@@ -1,20 +1,32 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { PlayIcon } from "@/components/Graphics";
 import { HeroPhotoStage, MoodGallery } from "@/components/PhotoStages";
-import { ReelPlayer } from "@/components/ReelPlayer";
-import { mediaUrl } from "@/lib/media-url";
-import { prefetchReel, saveReelToDisk } from "@/lib/video-cache";
+import type { VideoItem } from "@/types/video";
 
-export type VideoItem = {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  filename: string;
-  createdAt: string;
-};
+export type { VideoItem };
+
+/** Heavy player + reel list — deferred so hero text/images paint first. */
+const SelectedWork = lazy(() => import("@/components/SelectedWork"));
+
+function SelectedWorkFallback() {
+  return (
+    <section id="work" className="section work">
+      <div className="section-head">
+        <span className="section-index">01</span>
+        <div>
+          <h2>Selected work</h2>
+          <p>Loading your reels…</p>
+        </div>
+      </div>
+      <div className="loading-block">
+        <div className="loading-bar" />
+        <p className="muted">Loading reels…</p>
+      </div>
+    </section>
+  );
+}
 
 const CATEGORIES = ["Commercial", "Narration", "Character", "Promo", "Reel", "Other"];
 const VIDEO_EXT = /\.(mp4|webm|mov|m4v|avi|ogg|mkv)$/i;
@@ -117,7 +129,7 @@ export default function PortfolioApp({
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(initialVideos[0]?.id ?? null);
+  const [focusId, setFocusId] = useState<string | null>(initialVideos[0]?.id ?? null);
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
@@ -135,7 +147,7 @@ export default function PortfolioApp({
       if (!res.ok) throw new Error("Could not load videos.");
       const data = (await res.json()) as VideoItem[];
       setVideos(data);
-      setActiveId((prev) => {
+      setFocusId((prev) => {
         if (prev && data.some((v) => v.id === prev)) return prev;
         return data[0]?.id ?? null;
       });
@@ -152,8 +164,6 @@ export default function PortfolioApp({
   useEffect(() => {
     void loadVideos();
   }, [loadVideos]);
-
-  const active = videos.find((v) => v.id === activeId) ?? videos[0] ?? null;
 
   function pickFile(file: File | null | undefined) {
     if (!file) return;
@@ -202,7 +212,7 @@ export default function PortfolioApp({
       );
 
       setVideos((prev) => [video, ...prev.filter((v) => v.id !== video.id)]);
-      setActiveId(video.id);
+      setFocusId(video.id);
       setForm({ title: "", category: "Reel", description: "", file: null });
       if (fileRef.current) fileRef.current.value = "";
       setSuccess(`Uploaded “${video.title}”. Playing in Selected work.`);
@@ -229,7 +239,7 @@ export default function PortfolioApp({
 
     setVideos((prev) => {
       const next = prev.filter((v) => v.id !== id);
-      setActiveId((current) => (current === id ? (next[0]?.id ?? null) : current));
+      setFocusId((current) => (current === id ? (next[0]?.id ?? null) : current));
       return next;
     });
   }
@@ -281,110 +291,15 @@ export default function PortfolioApp({
           </div>
         </section>
 
-        <section id="work" className="section work">
-          <div className="section-head">
-            <span className="section-index">01</span>
-            <div>
-              <h2>Selected work</h2>
-              <p>
-                {loading
-                  ? "Loading your reels…"
-                  : videos.length > 0
-                    ? `${videos.length} reels ready — click one to play.`
-                    : "Upload your first reel from the studio desk below."}
-              </p>
-            </div>
-          </div>
-
-          {loading ? (
-            <div className="loading-block">
-              <div className="loading-bar" />
-              <p className="muted">Loading reels…</p>
-            </div>
-          ) : videos.length === 0 ? (
-            <div className="empty">
-              <p>No videos yet — your first reel starts the show.</p>
-              <a className="btn btn-ghost" href="#upload">
-                Upload your first reel
-              </a>
-            </div>
-          ) : (
-            <div className="work-grid">
-              <div className="player-panel">
-                {active ? (
-                  <>
-                    <div className="player-frame">
-                      <ReelPlayer
-                        key={active.id}
-                        className="player"
-                        src={mediaUrl(active.filename)}
-                        title={active.title}
-                      />
-                      <div className="player-glow" aria-hidden />
-                    </div>
-                    <div className="player-meta">
-                      <span className="tag">{active.category}</span>
-                      <h3>{active.title}</h3>
-                      {active.description ? <p>{active.description}</p> : null}
-                      <button
-                        type="button"
-                        className="btn btn-ghost reel-download-btn"
-                        onClick={() =>
-                          void saveReelToDisk(
-                            mediaUrl(active.filename),
-                            active.filename,
-                          ).catch(() => setError("Could not download this reel."))
-                        }
-                      >
-                        Download reel
-                      </button>
-                    </div>
-                  </>
-                ) : null}
-              </div>
-
-              <div className="reel-panel">
-                <div className="reel-panel-head">
-                  <span>Reels</span>
-                  <em>{videos.length}</em>
-                </div>
-                <ul className="reel-list">
-                  {videos.map((video, index) => (
-                    <li
-                      key={video.id}
-                      className={`reel-item ${active?.id === video.id ? "is-active" : ""}`}
-                    >
-                      <button
-                        type="button"
-                        className="reel-select"
-                        onMouseEnter={() => {
-                          prefetchReel(mediaUrl(video.filename));
-                        }}
-                        onClick={() => setActiveId(video.id)}
-                      >
-                        <span className="reel-thumb" aria-hidden>
-                          {active?.id === video.id ? <PlayIcon /> : String(index + 1).padStart(2, "0")}
-                        </span>
-                        <span className="reel-copy">
-                          <strong>{video.title}</strong>
-                          <em>{video.category}</em>
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        className="reel-delete"
-                        aria-label={`Delete ${video.title}`}
-                        onClick={() => void handleDelete(video.id)}
-                      >
-                        ×
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-        </section>
+        <Suspense fallback={<SelectedWorkFallback />}>
+          <SelectedWork
+            videos={videos}
+            loading={loading}
+            focusId={focusId}
+            onDelete={handleDelete}
+            onError={setError}
+          />
+        </Suspense>
 
         <MoodGallery />
 
