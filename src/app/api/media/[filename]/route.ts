@@ -61,9 +61,11 @@ function streamResponse(
 
   const webStream = new ReadableStream<Uint8Array>({
     start(controller) {
-      nodeStream.on("data", (chunk: Buffer) => {
+      nodeStream.on("data", (chunk: string | Buffer) => {
         try {
-          controller.enqueue(new Uint8Array(chunk));
+          const bytes =
+            typeof chunk === "string" ? Buffer.from(chunk) : chunk;
+          controller.enqueue(new Uint8Array(bytes));
         } catch {
           nodeStream.destroy();
         }
