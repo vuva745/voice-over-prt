@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { downloadReel } from "@/lib/video-cache";
 
 type ReelPlayerProps = {
   src: string;
@@ -11,9 +10,8 @@ type ReelPlayerProps = {
 };
 
 /**
- * Downloads each reel into Cache Storage, then plays from a local Blob URL.
- * That removes mid-play network buffering (VLC-smooth local playback).
- * `avbridge` / libav assets stay installed via `npm run vlc:deps` for format support tooling.
+ * Progressive HTML5 playback from /uploads (Range-friendly).
+ * Avoids full-file download-to-blob so large reels work on Vercel/CDN.
  */
 export function ReelPlayer({
   src,
@@ -22,9 +20,7 @@ export function ReelPlayer({
   title,
 }: ReelPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const objectUrlRef = useRef<string | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<"download" | "ready" | "error">("download");
+  const [buffering, setBuffering] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,58 +28,72 @@ export function ReelPlayer({
     if (!video || !src) return;
 
     let cancelled = false;
+    setBuffering(true);
     setError(null);
-    setPhase("download");
-    setProgress(0);
 
-    (async () => {
-      try {
-        const blob = await downloadReel(src, (pct) => {
-          if (!cancelled) setProgress(pct);
-        });
-        if (cancelled) return;
-
-        if (objectUrlRef.current) {
-          URL.revokeObjectURL(objectUrlRef.current);
-          objectUrlRef.current = null;
-        }
-
-        const objectUrl = URL.createObjectURL(blob);
-        objectUrlRef.current = objectUrl;
-
-        video.preload = "auto";
-        video.src = objectUrl;
-        video.load();
-        setPhase("ready");
-        setProgress(100);
-
-        if (autoPlay) {
-          await video.play().catch(() => undefined);
-        }
-      } catch (err) {
-        if (cancelled) return;
-        setPhase("error");
-        setError(err instanceof Error ? err.message : "Could not load video.");
-        video.src = src;
-        video.load();
-        if (autoPlay) void video.play().catch(() => undefined);
+    const onWaiting = () => setBuffering(true);
+    const onPlaying = () => setBuffering(false);
+    const onCanPlay = () => {
+      setBuffering(false);
+      if (!cancelled && autoPlay) {
+        void video.play().catch(() => undefined);
       }
+    };
+    const onError = () => {
+      setBuffering(false);
+      setError(
+        "Video failed to load. If this is a fresh deploy, enable Git LFS in Vercel → Project Settings → Git, then redeploy.",
+      );
+    };
+
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("playing", onPlaying);
+    video.addEventListener("canplay", onCanPlay);
+    video.addEventListener("error", onError);
+
+    // Probe that the asset is a real media file, not a Git LFS pointer (~130 bytes of text).
+    void (async () => {
+      try {
+        const head = await fetch(src, {
+          method: "GET",
+          headers: { Range: "bytes=0-200" },
+        });
+        const buf = await head.arrayBuffer();
+        const text = new TextDecoder().decode(buf.slice(0, 64));
+        if (text.startsWith("version https://git-lfs.github.com/spec/v1")) {
+          if (!cancelled) {
+            setBuffering(false);
+            setError(
+              "Deploy is serving Git LFS pointers, not videos. Enable Git LFS in Vercel Project Settings → Git, then Redeploy.",
+            );
+          }
+          return;
+        }
+      } catch {
+        // Ignore probe failures; still try to play.
+      }
+
+      if (cancelled) return;
+      video.preload = "auto";
+      video.src = src;
+      video.load();
+      if (autoPlay) void video.play().catch(() => undefined);
     })();
 
     return () => {
       cancelled = true;
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("canplay", onCanPlay);
+      video.removeEventListener("error", onError);
       video.pause();
-      if (objectUrlRef.current) {
-        URL.revokeObjectURL(objectUrlRef.current);
-        objectUrlRef.current = null;
-      }
+      video.removeAttribute("src");
+      video.load();
     };
   }, [src, autoPlay]);
 
-  const showOverlay = phase === "download";
-
   return (
-    <div className={`reel-player-wrap${showOverlay ? " is-buffering" : ""}`}>
+    <div className={`reel-player-wrap${buffering ? " is-buffering" : ""}`}>
       <video
         ref={videoRef}
         className={className}
@@ -92,13 +102,10 @@ export function ReelPlayer({
         preload="auto"
         title={title}
       />
-      {showOverlay ? (
-        <div className="reel-player-overlay" aria-live="polite">
-          <p className="reel-player-status">Downloading {progress}%</p>
-          <div className="reel-download-track" aria-hidden>
-            <div className="reel-download-fill" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
+      {buffering && !error ? (
+        <p className="reel-player-status" aria-live="polite">
+          Loading…
+        </p>
       ) : null}
       {error ? (
         <p className="reel-player-status is-error" role="alert">
