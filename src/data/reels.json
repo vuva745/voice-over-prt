@@ -1,0 +1,42 @@
+[
+  {
+    "id": "087a2361-5d87-421e-826a-ec333438cb60",
+    "title": "Soft Open · Solo Spot",
+    "category": "Narration",
+    "description": "50s vertical reel · 1080×1944 · intimate single-take delivery.",
+    "filename": "1784661663744-202607211035.mp4",
+    "createdAt": "2026-07-21T19:21:03.744Z"
+  },
+  {
+    "id": "8e3807ef-53cd-4396-b8d1-7b72539f8bee",
+    "title": "Main Performance · 4K",
+    "category": "Reel",
+    "description": "42s vertical reel · 2160×3888 · flagship performance take.",
+    "filename": "1784661663745-202607211048.mp4",
+    "createdAt": "2026-07-21T19:21:02.744Z"
+  },
+  {
+    "id": "9cfd809a-7c4a-49dc-9b81-b07b69ae80fb",
+    "title": "Performance Take A · 4K",
+    "category": "Character",
+    "description": "41s vertical reel · 2160×3888 · alternate character read A.",
+    "filename": "1784661663746-202607211048__1_.mp4",
+    "createdAt": "2026-07-21T19:21:01.744Z"
+  },
+  {
+    "id": "a7b87406-324d-4f6b-9c41-df2ddece1eac",
+    "title": "Performance Take B · 4K",
+    "category": "Character",
+    "description": "41s vertical reel · 2160×3888 · alternate character read B.",
+    "filename": "1784661663747-202607211048__2_.mp4",
+    "createdAt": "2026-07-21T19:21:00.744Z"
+  },
+  {
+    "id": "1e2be1b0-7216-4e06-8f15-53738cb7d9e7",
+    "title": "Performance Take C · 4K",
+    "category": "Character",
+    "description": "41s vertical reel · 2160×3888 · alternate character read C.",
+    "filename": "1784661663748-202607211048__3_.mp4",
+    "createdAt": "2026-07-21T19:20:59.744Z"
+  }
+]
