@@ -21,13 +21,13 @@ Videos are saved to `public/uploads/` and listed in `data/videos.json`.
 
 ## Deploy (Vercel)
 
-Reels are stored with **Git LFS**. Vercel must pull LFS objects or it will serve tiny pointer files and videos will not play.
+Reels are stored with **Git LFS**. Vercel often deploys pointer stubs instead of real MP4s.
 
-1. Open your project on Vercel → **Settings** → **Git**
-2. Enable **Git Large File Storage (LFS)**
-3. **Redeploy** the latest commit (required after toggling LFS)
+This app serves production media from GitHub’s LFS media CDN automatically
+(`media.githubusercontent.com`), so videos play without enabling Vercel Git LFS.
 
-Docs: [Vercel Git LFS](https://vercel.com/docs/project-configuration/git-settings#git-large-file-storage-lfs)
+Optional: still enable **Git LFS** under Vercel → Settings → Git if you want
+`/uploads/...` on the Vercel CDN to work too.
 
 ## Customize
 
