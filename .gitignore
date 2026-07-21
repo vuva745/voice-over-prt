@@ -24,13 +24,11 @@
 .DS_Store
 *.pem
 
-# uploaded portfolio videos
-/public/uploads/*
-!/public/uploads/.gitkeep
+# runtime / generated (keep uploads + source videos tracked via Git LFS)
 /public/avbridge-libav/
-/data/videos.json
-/data/media/
 /data/tmp-uploads/
+# duplicate of public/uploads — skip to save LFS quota
+/data/media/
 
 # debug
 npm-debug.log*
@@ -47,6 +45,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# source video assets (too large for GitHub)
-/src/videos/
