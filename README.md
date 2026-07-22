@@ -17,7 +17,7 @@ Open [http://localhost:3000](http://localhost:3000).
 2. Drop an MP4 / WebM / MOV file (no size limit).
 3. Add a title and category, then publish.
 
-Videos are saved to `public/uploads/` and listed in `data/videos.json`.
+Videos live in `src/videos/` and are synced to `public/videos/` on install (`npm run sync:videos`). The catalog is in `data/videos.json`.
 
 ## Deploy (Vercel)
 

@@ -579,6 +579,29 @@ textarea {
   min-height: inherit;
 }
 
+.reel-media-controller {
+  display: block;
+  width: 100%;
+  max-height: min(70vh, 720px);
+  aspect-ratio: 9 / 16;
+  background: #000;
+  --media-primary-color: var(--signal);
+  --media-secondary-color: rgba(15, 22, 34, 0.92);
+  --media-control-background: rgba(7, 11, 18, 0.72);
+  --media-control-hover-background: rgba(94, 240, 200, 0.18);
+  --media-range-bar-color: var(--signal);
+  --media-range-thumb-color: var(--cyan);
+  --media-font-family: var(--font-body);
+  --media-icon-color: var(--bone);
+  --media-text-color: var(--bone);
+}
+
+.reel-control-bar {
+  width: 100%;
+  padding: 0.35rem 0.45rem 0.55rem;
+  background: linear-gradient(180deg, transparent, rgba(7, 11, 18, 0.92));
+}
+
 .reel-player-wrap.is-buffering .player {
   opacity: 0.72;
 }

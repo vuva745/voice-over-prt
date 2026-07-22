@@ -3,15 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --hostname 0.0.0.0",
+    "dev": "next dev",
+    "dev:lan": "next dev --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "postinstall": "node scripts/copy-avbridge-libav.cjs",
+    "postinstall": "node scripts/copy-avbridge-libav.cjs && node scripts/sync-videos.cjs",
+    "sync:videos": "node scripts/sync-videos.cjs",
     "vlc:deps": "npm install avbridge && node scripts/copy-avbridge-libav.cjs"
   },
   "dependencies": {
     "avbridge": "^2.13.0",
+    "media-chrome": "^4.19.2",
     "next": "16.2.11",
     "react": "19.2.4",
     "react-dom": "19.2.4"

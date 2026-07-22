@@ -22,6 +22,7 @@ function projectRoot() {
   for (const candidate of candidates) {
     if (
       existsSync(path.join(candidate, "src", "data", "reels.json")) ||
+      existsSync(path.join(candidate, "public", "videos")) ||
       existsSync(path.join(candidate, "public", "uploads"))
     ) {
       return candidate;
@@ -34,7 +35,8 @@ function projectRoot() {
 const ROOT = projectRoot();
 const DATA_DIR = path.join(ROOT, "data");
 const DATA_FILE = path.join(DATA_DIR, "videos.json");
-export const UPLOADS_DIR = path.join(ROOT, "public", "uploads");
+/** Public reel files — synced from src/videos via scripts/sync-videos.cjs */
+export const UPLOADS_DIR = path.join(ROOT, "public", "videos");
 
 async function ensureStorage() {
   await fs.mkdir(DATA_DIR, { recursive: true });

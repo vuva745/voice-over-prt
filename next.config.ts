@@ -3,11 +3,11 @@ import path from "path";
 
 const nextConfig: NextConfig = {
   // Allow LAN devices to use Hot Reload WebSocket (fixes ERR_INVALID_HTTP_RESPONSE on HMR).
-  allowedDevOrigins: ["192.168.1.117", "127.0.0.1", "localhost"],
+  allowedDevOrigins: ["192.168.1.117", "10.101.7.25", "127.0.0.1", "localhost"],
   turbopack: {
     root: path.join(__dirname),
   },
-  transpilePackages: ["avbridge"],
+  transpilePackages: ["avbridge", "media-chrome"],
   images: {
     remotePatterns: [
       {
@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/uploads/:path*",
+        source: "/videos/:path*",
         headers: [
           { key: "Accept-Ranges", value: "bytes" },
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },

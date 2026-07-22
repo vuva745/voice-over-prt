@@ -1,27 +1,27 @@
-/** Client-safe URL helper for uploaded reel files. */
+/** Client-safe URL helper for portfolio reel files (served from /videos). */
 
 const REPO = "vuva745/voice-over-prt";
 const BRANCH = "main";
 
-function isLocalHost() {
+/** True when the site is the Vercel production deploy (needs GitHub LFS CDN). */
+function isProductionDeploy() {
   if (typeof window === "undefined") {
-    return process.env.NODE_ENV !== "production";
+    return process.env.VERCEL === "1";
   }
   const host = window.location.hostname;
-  return host === "localhost" || host === "127.0.0.1" || host.endsWith(".local");
+  return host.endsWith(".vercel.app");
 }
 
 /**
- * Local: serve from /uploads (Next static).
- * Production: GitHub LFS media CDN (Vercel often deploys LFS pointers otherwise).
+ * Local dev (localhost, LAN IP, etc.): static files under /videos.
+ * Production on Vercel: GitHub LFS media CDN when deploy serves LFS pointers.
  */
 export function mediaUrl(filename: string) {
   const safe = encodeURIComponent(filename);
 
-  if (isLocalHost()) {
-    return `/uploads/${safe}`;
+  if (!isProductionDeploy()) {
+    return `/videos/${safe}`;
   }
 
-  // Real LFS bytes with Accept-Ranges — not the tiny pointer Vercel serves from /uploads.
-  return `https://media.githubusercontent.com/media/${REPO}/${BRANCH}/public/uploads/${safe}`;
+  return `https://media.githubusercontent.com/media/${REPO}/${BRANCH}/public/videos/${safe}`;
 }

@@ -1,6 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  MediaController,
+  MediaControlBar,
+  MediaTimeRange,
+  MediaTimeDisplay,
+  MediaVolumeRange,
+  MediaPlaybackRateButton,
+  MediaPlayButton,
+  MediaSeekBackwardButton,
+  MediaSeekForwardButton,
+  MediaMuteButton,
+  MediaFullscreenButton,
+  MediaPipButton,
+  MediaLoadingIndicator,
+} from "media-chrome/react";
 import { downloadReel } from "@/lib/video-cache";
 
 type ReelPlayerProps = {
@@ -11,8 +26,7 @@ type ReelPlayerProps = {
 };
 
 /**
- * Plays from a local Blob after downloading (smooth, no mid-play stalls).
- * Falls back to progressive stream if download fails.
+ * Media Chrome control plugins + blob/progressive source loading.
  */
 export function ReelPlayer({
   src,
@@ -58,9 +72,25 @@ export function ReelPlayer({
       if (autoPlay) await video.play().catch(() => undefined);
     };
 
+    const isSameOrigin =
+      src.startsWith("/") ||
+      (typeof window !== "undefined" && src.startsWith(window.location.origin));
+
     (async () => {
+      // Local /videos files: stream directly — no full download needed.
+      if (isSameOrigin) {
+        try {
+          await playProgressive();
+        } catch (err) {
+          if (!cancelled) {
+            setPhase("error");
+            setError(err instanceof Error ? err.message : "Could not load video.");
+          }
+        }
+        return;
+      }
+
       try {
-        // Reject Git LFS pointer stubs (Vercel /uploads when LFS isn't enabled).
         const probe = await fetch(src, { headers: { Range: "bytes=0-200" } });
         const head = new TextDecoder().decode((await probe.arrayBuffer()).slice(0, 64));
         if (head.startsWith("version https://git-lfs.github.com/spec/v1")) {
@@ -74,7 +104,6 @@ export function ReelPlayer({
         });
         if (cancelled) return;
 
-        // Tiny body = broken asset
         if (blob.size < 10_000) {
           throw new Error("Video file is too small to play.");
         }
@@ -105,14 +134,31 @@ export function ReelPlayer({
 
   return (
     <div className={`reel-player-wrap${showOverlay ? " is-buffering" : ""}`}>
-      <video
-        ref={videoRef}
-        className={className}
-        controls
-        playsInline
-        preload="auto"
-        title={title}
-      />
+      <MediaController className="reel-media-controller">
+        <video
+          ref={videoRef}
+          slot="media"
+          className={className}
+          playsInline
+          preload="auto"
+          title={title}
+          crossOrigin="anonymous"
+        />
+        <MediaLoadingIndicator slot="centered-chrome" />
+        <MediaControlBar className="reel-control-bar">
+          <MediaPlayButton />
+          <MediaSeekBackwardButton seekOffset={5} />
+          <MediaSeekForwardButton seekOffset={5} />
+          <MediaTimeRange />
+          <MediaTimeDisplay showDuration />
+          <MediaMuteButton />
+          <MediaVolumeRange />
+          <MediaPlaybackRateButton />
+          <MediaPipButton />
+          <MediaFullscreenButton />
+        </MediaControlBar>
+      </MediaController>
+
       {showOverlay ? (
         <div className="reel-player-overlay" aria-live="polite">
           <p className="reel-player-status">Downloading {progress}%</p>
